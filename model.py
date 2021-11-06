@@ -83,29 +83,29 @@ class VRNN(nn.Module):
 			
 			phi_x_t = self.phi_x(x[t])
 
-			#encoder
+			# encoder generating p(z|x) parameters
 			enc_t = self.enc(torch.cat([phi_x_t, h[-1]], 1))
 			enc_mean_t = self.enc_mean(enc_t)
 			enc_std_t = self.enc_std(enc_t)
 
-			#prior
+			# prior p(z) parameters
 			prior_t = self.prior(h[-1])
 			prior_mean_t = self.prior_mean(prior_t)
 			prior_std_t = self.prior_std(prior_t)
 
-			#sampling and reparameterization
+			# sampling from p(z|x) with reparameterization
 			z_t = self._reparameterized_sample(enc_mean_t, enc_std_t)
 			phi_z_t = self.phi_z(z_t)
 
-			#decoder
+			# decoder generating p(x|z) parameters
 			dec_t = self.dec(torch.cat([phi_z_t, h[-1]], 1))
 			dec_mean_t = self.dec_mean(dec_t)
 			dec_std_t = self.dec_std(dec_t)
 
-			#recurrence
+			# recurrence
 			_, h = self.rnn(torch.cat([phi_x_t, phi_z_t], 1).unsqueeze(0), h)
 
-			#computing losses
+			# computing losses
 			kld_loss += self._kld_gauss(enc_mean_t, enc_std_t, prior_mean_t, prior_std_t)
 			#nll_loss += self._nll_gauss(dec_mean_t, dec_std_t, x[t])
 			nll_loss += self._nll_bernoulli(dec_mean_t, x[t])
